@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Http\Requests\POS;
+
+use App\Helpers\ApiResponse;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+
+class ProcessSaleRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'items.required' => 'At least one item is required',
+            'items.array' => 'Items must be an array',
+            'items.min' => 'At least one item is required',
+            'items.*.product_id.required' => 'Product ID is required for each item',
+            'items.*.product_id.exists' => 'One or more products do not exist',
+            'items.*.quantity.required' => 'Quantity is required for each item',
+            'items.*.quantity.min' => 'Quantity must be at least 1',
+        ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            ApiResponse::error(
+                'Validation failed',
+                $validator->errors(),
+                422
+            )
+        );
+    }
+}
